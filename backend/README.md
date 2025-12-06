@@ -20,11 +20,11 @@ This project uses Docker Compose to run only the PostgreSQL database in a contai
 
 ### Connecting Your Local Backend
 - Use these connection settings in your Python code:
-  - `DB_HOST=localhost`
-  - `DB_PORT=5432`
-  - `DB_NAME=cbon_db`
-  - `DB_USER=cbonuser`
-  - `DB_PASSWORD=cbonpass`
+  - `DB_NAME=cbon_db(name in general)`
+  - `DB_HOST=db(connection)`
+  - `DB_PORT=5432(connection)`
+  - `DB_USER=cbonuser(connection)`
+  - `DB_PASSWORD=cbonpass(connection)`
 
 You can change these in `docker-compose.yml` if needed.
 
