@@ -1,5 +1,6 @@
 from app.api_router import api_router
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
 from app.core.logger import get_logger
 # Create database tables
@@ -10,6 +11,16 @@ app = FastAPI(
     description="CRUD API for managing projects",
     version="1.0.0"
 )
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
+
 app.include_router(api_router, prefix="/api/v1")
 
 

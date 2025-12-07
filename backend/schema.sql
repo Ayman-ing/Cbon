@@ -13,6 +13,8 @@ CREATE TABLE "projects" (
   "title" text,
   "description" text,
   "status" text,
+  "start_date" date,
+  "due_date" date,
   "created_at" timestamp,
   "updated_at" timestamp
 );
@@ -22,7 +24,7 @@ CREATE TABLE "project_members" (
   "project_id" uuid,
   "role" text,
   "joined_at" timestamp,
-  "primary" key(user_id,project_id)
+  primary key(user_id,project_id)
 );
 
 CREATE TABLE "tasks" (
