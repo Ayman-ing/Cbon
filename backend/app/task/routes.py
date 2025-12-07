@@ -1,205 +1,206 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import UUID
 from app.core.database import get_db
-from app.project.model import Project
-from app.project.schema import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.task.model import Task
+from app.task.schema import TaskCreate, TaskUpdate, TaskResponse
 
-router = APIRouter(prefix="/projects", tags=["Projects"])
+router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
 # Database operations
-def create_project_in_db(db: Session, project_data: ProjectCreate) -> Project:
-    """Create a new project in the database"""
-    db_project = Project(**project_data.model_dump())
-    db.add(db_project)
+def create_task_in_db(db: Session, task_data: TaskCreate) -> Task:
+    """Create a new task in the database"""
+    db_task = Task(**task_data.model_dump())
+    db.add(db_task)
     db.commit()
-    db.refresh(db_project)
-    return db_project
+    db.refresh(db_task)
+    return db_task
 
 
-def get_project_by_id(db: Session, project_id: int) -> Optional[Project]:
-    """Get a project by ID from the database"""
-    return db.query(Project).filter(Project.id == project_id).first()
+def get_task_by_id(db: Session, task_id: UUID) -> Optional[Task]:
+    """Get a task by ID from the database"""
+    return db.query(Task).filter(Task.id == task_id).first()
 
 
-def get_all_projects_from_db(db: Session, skip: int = 0, limit: int = 100, active_only: bool = False) -> List[Project]:
-    """Get all projects from the database with optional filtering"""
-    query = db.query(Project)
-    if active_only:
-        query = query.filter(Project.is_active == True)
+def get_all_tasks_from_db(db: Session, skip: int = 0, limit: int = 100, status_filter: Optional[str] = None) -> List[Task]:
+    """Get all tasks from the database with optional filtering"""
+    query = db.query(Task)
+    if status_filter:
+        query = query.filter(Task.status == status_filter)
     return query.offset(skip).limit(limit).all()
 
 
-def update_project_in_db(db: Session, project_id: int, project_data: ProjectUpdate) -> Optional[Project]:
-    """Update a project in the database"""
-    db_project = get_project_by_id(db, project_id)
-    if not db_project:
+def update_task_in_db(db: Session, task_id: UUID, task_data: TaskUpdate) -> Optional[Task]:
+    """Update a task in the database"""
+    db_task = get_task_by_id(db, task_id)
+    if not db_task:
         return None
     
-    update_data = project_data.model_dump(exclude_unset=True)
+    update_data = task_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(db_project, field, value)
+        setattr(db_task, field, value)
     
     db.commit()
-    db.refresh(db_project)
-    return db_project
+    db.refresh(db_task)
+    return db_task
 
 
-def delete_project_from_db(db: Session, project_id: int) -> bool:
-    """Delete a project from the database (hard delete)"""
-    db_project = get_project_by_id(db, project_id)
-    if not db_project:
+def delete_task_by_id(db: Session, task_id: UUID) -> bool:
+    """Delete a task from the database (hard delete)"""
+    db_task = get_task_by_id(db, task_id)
+    if not db_task:
         return False
     
-    db.delete(db_project)
+    db.delete(db_task)
     db.commit()
     return True
 
 
-def soft_delete_project_in_db(db: Session, project_id: int) -> Optional[Project]:
-    """Soft delete a project by setting is_active to False"""
-    db_project = get_project_by_id(db, project_id)
-    if not db_project:
+def soft_delete_task_in_db(db: Session, task_id: UUID) -> Optional[Task]:
+    """Soft delete a task by setting status to 'archived'"""
+    db_task = get_task_by_id(db, task_id)
+    if not db_task:
         return None
     
-    db_project.is_active = False
+    db_task.status = 'archived'
     db.commit()
-    db.refresh(db_project)
-    return db_project
+    db.refresh(db_task)
+    return db_task
 
 
 # API Routes
 @router.post(
     "/",
-    response_model=ProjectResponse,
+    response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new project"
+    summary="Create a new task"
 )
-def create_project(
-    project_data: ProjectCreate,
+def create_task(
+    task_data: TaskCreate,
     db: Session = Depends(get_db)
 ):
     """
-    Create a new project with the following information:
-    - **name**: Project name (required)
-    - **description**: Project description (optional)
-    - **status**: Project status (default: active)
-    - **is_active**: Whether the project is active (default: true)
+    Create a new task with the following information:
+    - **title**: Task title (required)
+    - **description**: Task description (optional)
+    - **status**: Task status (default: active)
+    - **owner_id**: Task owner UUID (optional)
     """
-    project = create_project_in_db(db, project_data)
-    return ProjectResponse.model_validate(project)
+    task = create_task_in_db(db, task_data)
+    return TaskResponse.model_validate(task)
 
 
 @router.get(
     "/",
-    response_model=List[ProjectResponse],
-    summary="Get all projects"
+    response_model=List[TaskResponse],
+    summary="Get all tasks"
 )
-def get_all_projects(
+def get_all_tasks(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=100, description="Maximum number of records to return"),
-    active_only: bool = Query(False, description="Filter only active projects"),
+    status_filter: Optional[str] = Query(None, description="Filter tasks by status"),
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve all projects with pagination and optional filtering.
+    Retrieve all tasks with pagination and optional filtering.
     """
-    projects = get_all_projects_from_db(db, skip=skip, limit=limit, active_only=active_only)
-    return [ProjectResponse.model_validate(p) for p in projects]
+    tasks = get_all_tasks_from_db(db, skip=skip, limit=limit, status_filter=status_filter)
+    return [TaskResponse.model_validate(t) for t in tasks]
 
 
 @router.get(
-    "/{project_id}",
-    response_model=ProjectResponse,
-    summary="Get a project by ID"
+    "/{task_id}",
+    response_model=TaskResponse,
+    summary="Get a task by ID"
 )
-def get_project(
-    project_id: int,
+def get_task(
+    task_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve a specific project by its ID.
+    Retrieve a specific task by its ID.
     """
-    project = get_project_by_id(db, project_id)
-    if not project:
+    task = get_task_by_id(db, task_id)
+    if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project with id {project_id} not found"
+            detail=f"Task with id {task_id} not found"
         )
-    return ProjectResponse.model_validate(project)
+    return TaskResponse.model_validate(task)
 
 
 @router.put(
-    "/{project_id}",
-    response_model=ProjectResponse,
-    summary="Update a project"
+    "/{task_id}",
+    response_model=TaskResponse,
+    summary="Update a task"
 )
-def update_project(
-    project_id: int,
-    project_data: ProjectUpdate,
+def update_task(
+    task_id: UUID,
+    task_data: TaskUpdate,
     db: Session = Depends(get_db)
 ):
     """
-    Update a project's information. Only provided fields will be updated.
+    Update a task's information. Only provided fields will be updated.
     """
-    project = update_project_in_db(db, project_id, project_data)
-    if not project:
+    task = update_task_in_db(db, task_id, task_data)
+    if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project with id {project_id} not found"
+            detail=f"Task with id {task_id} not found"
         )
-    return ProjectResponse.model_validate(project)
+    return TaskResponse.model_validate(task)
 
 
 @router.patch(
-    "/{project_id}",
-    response_model=ProjectResponse,
-    summary="Partially update a project"
+    "/{task_id}",
+    response_model=TaskResponse,
+    summary="Partially update a task"
 )
-def patch_project(
-    project_id: int,
-    project_data: ProjectUpdate,
+def patch_task(
+    task_id: UUID,
+    task_data: TaskUpdate,
     db: Session = Depends(get_db)
 ):
     """
-    Partially update a project. Same as PUT but semantically indicates partial update.
+    Partially update a task. Same as PUT but semantically indicates partial update.
     """
-    project = update_project_in_db(db, project_id, project_data)
-    if not project:
+    task = update_task_in_db(db, task_id, task_data)
+    if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project with id {project_id} not found"
+            detail=f"Task with id {task_id} not found"
         )
-    return ProjectResponse.model_validate(project)
+    return TaskResponse.model_validate(task)
 
 
 @router.delete(
-    "/{project_id}",
+    "/{task_id}",
     status_code=status.HTTP_200_OK,
-    summary="Delete a project"
+    summary="Delete a task"
 )
-def delete_project(
-    project_id: int,
-    soft: bool = Query(False, description="Use soft delete (deactivate) instead of hard delete"),
+def delete_task(
+    task_id: UUID,
+    soft: bool = Query(False, description="Use soft delete (archive) instead of hard delete"),
     db: Session = Depends(get_db)
 ):
     """
-    Delete a project. Use soft=true for soft delete (sets is_active to false).
+    Delete a task. Use soft=true for soft delete (sets status to 'archived').
     """
     if soft:
-        project = soft_delete_project_in_db(db, project_id)
-        if not project:
+        task = soft_delete_task_in_db(db, task_id)
+        if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Project with id {project_id} not found"
+                detail=f"Task with id {task_id} not found"
             )
-        return {"message": "Project deactivated successfully"}
+        return {"message": "Task archived successfully"}
     else:
-        deleted = delete_project_from_db(db, project_id)
+        deleted = delete_task_from_db(db, task_id)
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Project with id {project_id} not found"
+                detail=f"Task with id {task_id} not found"
             )
-        return {"message": "Project deleted successfully"}
+        return {"message": "Task deleted successfully"}

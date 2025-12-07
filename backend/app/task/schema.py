@@ -1,24 +1,33 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
-class ProjectBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255)
+class TaskBase(BaseModel):
+    title: str = Field(..., min_length=1)
     description: Optional[str] = None
-    status: Optional[str] = "active"
-    is_active: Optional[bool] = True
+    status: Optional[str] = "not_started"
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    position: Optional[str] = None
 
-class ProjectCreate(ProjectBase):
-    pass
+class TaskCreate(TaskBase):
+    project_id: UUID
+    assigned_to: Optional[UUID] = None
 
-class ProjectUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
+class TaskUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1)
     description: Optional[str] = None
     status: Optional[str] = None
-    is_active: Optional[bool] = None
+    priority: Optional[str] = None
+    assigned_to: Optional[UUID] = None
+    due_date: Optional[datetime] = None
+    position: Optional[str] = None
 
-class ProjectResponse(ProjectBase):
-    id: int
+class TaskResponse(TaskBase):
+    id: UUID
+    project_id: UUID
+    assigned_to: Optional[UUID] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -2,6 +2,10 @@ from app.api_router import api_router
 from fastapi import FastAPI
 from app.core.database import engine, Base
 from app.core.logger import get_logger
+from app.user.model import User  # Ensure User model is imported for migrations
+from app.project.model import Project  # Ensure Project model is imported for migrations
+from app.task.model import Task  # Ensure Task model is imported for migrations
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 

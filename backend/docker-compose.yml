@@ -5,8 +5,8 @@ services:
     image: postgres:15  # Official, fast pull
     restart: always
     environment:
-      POSTGRES_SERVER_NAME: db
-      POSTGRES_HOST: localhost
+      POSTGRES_SERVER_NAME: db  
+      POSTGRES_HOST: localhost  # HOST NAAAAME!!!! HOWA db, thank me later i save you 30 minutes
       POSTGRES_USER: cbonuser
       POSTGRES_PASSWORD: cbonpass
       POSTGRES_DB: cbon_db
