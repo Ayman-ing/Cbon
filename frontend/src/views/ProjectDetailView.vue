@@ -88,20 +88,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { projectApi, type Project } from '@/services/api'
+import { projectApi, taskApi, type Project, type Task } from '@/services/api'
 import KanbanColumn from '@/components/KanbanColumn.vue'
 import TaskModal from '@/components/TaskModal.vue'
 import TaskDetailModal from '@/components/TaskDetailModal.vue'
-
-export interface Task {
-  id: number
-  title: string
-  description: string
-  status: 'not_started' | 'in_progress' | 'completed'
-  assignedTo?: string
-  priority: 'low' | 'medium' | 'high'
-  createdAt: Date
-}
 
 const route = useRoute()
 const projectId = String(route.params.id)
@@ -111,6 +101,8 @@ const tasks = ref<Task[]>([])
 const showAddTaskModal = ref(false)
 const showTaskDetailModal = ref(false)
 const selectedTask = ref<Task | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
 // Computed tasks by status
 const notStartedTasks = computed(() => tasks.value.filter(t => t.status === 'not_started'))
@@ -122,41 +114,24 @@ const loadProject = async () => {
   try {
     const response = await projectApi.getById(projectId)
     project.value = response.data
-  } catch (error) {
-    console.error('Failed to load project:', error)
+  } catch (err) {
+    console.error('Failed to load project:', err)
+    error.value = 'Failed to load project details'
   }
 }
 
-// Mock tasks for now (will be replaced with API calls)
-const loadTasks = () => {
-  tasks.value = [
-    {
-      id: 1,
-      title: 'Design homepage mockup',
-      description: 'Create initial design mockups for the homepage',
-      status: 'completed',
-      assignedTo: 'John Doe',
-      priority: 'high',
-      createdAt: new Date('2025-12-01')
-    },
-    {
-      id: 2,
-      title: 'Implement authentication',
-      description: 'Set up user authentication system with JWT',
-      status: 'in_progress',
-      assignedTo: 'Jane Smith',
-      priority: 'high',
-      createdAt: new Date('2025-12-03')
-    },
-    {
-      id: 3,
-      title: 'Write API documentation',
-      description: 'Document all API endpoints and request/response formats',
-      status: 'not_started',
-      priority: 'medium',
-      createdAt: new Date('2025-12-05')
-    },
-  ]
+// Load tasks for this project
+const loadTasks = async () => {
+  try {
+    loading.value = true
+    const response = await taskApi.getByProject(projectId)
+    tasks.value = response.data
+  } catch (err) {
+    console.error('Failed to load tasks:', err)
+    error.value = 'Failed to load tasks'
+  } finally {
+    loading.value = false
+  }
 }
 
 const openTaskDetail = (task: Task) => {
@@ -164,34 +139,45 @@ const openTaskDetail = (task: Task) => {
   showTaskDetailModal.value = true
 }
 
-const handleAddTask = (taskData: Partial<Task>) => {
-  // TODO: Call API to create task
-  const newTask: Task = {
-    id: tasks.value.length + 1,
-    title: taskData.title!,
-    description: taskData.description || '',
-    status: 'not_started',
-    assignedTo: taskData.assignedTo,
-    priority: taskData.priority || 'medium',
-    createdAt: new Date()
+const handleAddTask = async (taskData: Partial<Task>) => {
+  try {
+    const newTask = {
+      ...taskData,
+      project_id: projectId,
+      status: 'not_started' as const,
+      priority: taskData.priority || 'medium',
+    }
+    await taskApi.create(newTask as Omit<Task, 'id' | 'created_at' | 'updated_at'>)
+    await loadTasks() // Reload tasks
+    showAddTaskModal.value = false
+  } catch (err) {
+    console.error('Failed to create task:', err)
+    error.value = 'Failed to create task'
   }
-  tasks.value.push(newTask)
-  showAddTaskModal.value = false
 }
 
-const handleUpdateTask = (updatedTask: Task) => {
-  // TODO: Call API to update task
-  const index = tasks.value.findIndex(t => t.id === updatedTask.id)
-  if (index !== -1) {
-    tasks.value[index] = updatedTask
+const handleUpdateTask = async (updatedTask: Task) => {
+  try {
+    if (!updatedTask.id) return
+    await taskApi.update(updatedTask.id, updatedTask)
+    await loadTasks() // Reload tasks
+    showTaskDetailModal.value = false
+  } catch (err) {
+    console.error('Failed to update task:', err)
+    error.value = 'Failed to update task'
   }
-  showTaskDetailModal.value = false
 }
 
-const handleDeleteTask = (taskId: number) => {
-  // TODO: Call API to delete task
-  tasks.value = tasks.value.filter(t => t.id !== taskId)
-  showTaskDetailModal.value = false
+const handleDeleteTask = async (taskId: string) => {
+  try {
+    if (!confirm('Are you sure you want to delete this task?')) return
+    await taskApi.delete(taskId, false)
+    await loadTasks() // Reload tasks
+    showTaskDetailModal.value = false
+  } catch (err) {
+    console.error('Failed to delete task:', err)
+    error.value = 'Failed to delete task'
+  }
 }
 
 onMounted(() => {

@@ -143,7 +143,7 @@ const loadStats = async () => {
 
     stats.value = {
       projects: projects.length,
-      active: projects.filter((p) => p.is_active).length,
+      active: projects.filter((p) => p.status=='active').length,
       completed: projects.filter((p) => p.status === 'completed').length,
     }
   } catch (error) {

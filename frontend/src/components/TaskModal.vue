@@ -90,7 +90,7 @@
                   Assign To
                 </label>
                 <input
-                  v-model="formData.assignedTo"
+                  v-model="formData.assigned_to"
                   type="text"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter member name"
@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import type { Task } from '@/services/api'
 
 defineProps<{
   show: boolean
@@ -130,14 +131,14 @@ defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [data: any]
+  save: [data: Partial<Task>]
 }>()
 
 const formData = ref({
   title: '',
   description: '',
-  priority: 'medium',
-  assignedTo: ''
+  priority: 'medium' as 'low' | 'medium' | 'high',
+  assigned_to: ''
 })
 
 const handleSubmit = () => {
@@ -146,7 +147,7 @@ const handleSubmit = () => {
     title: '',
     description: '',
     priority: 'medium',
-    assignedTo: ''
+    assigned_to: ''
   }
 }
 </script>

@@ -103,7 +103,7 @@
                     Assign To
                   </label>
                   <input
-                    v-model="editedTask.assignedTo"
+                    v-model="editedTask.assigned_to"
                     type="text"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -142,7 +142,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { Task } from '@/views/ProjectDetailView.vue'
+import type { Task } from '@/services/api'
 
 const props = defineProps<{
   show: boolean
@@ -152,17 +152,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   update: [task: Task]
-  delete: [taskId: number]
+  delete: [taskId: string]
 }>()
 
 const editedTask = ref<Task>({
-  id: 0,
+  id: '',
+  project_id: '',
   title: '',
   description: '',
   status: 'not_started',
   priority: 'medium',
-  assignedTo: '',
-  createdAt: new Date()
+  assigned_to: '',
 })
 
 watch(() => props.task, (newTask) => {
@@ -176,7 +176,7 @@ const handleUpdate = () => {
 }
 
 const handleDelete = () => {
-  if (confirm('Are you sure you want to delete this task?')) {
+  if (editedTask.value.id) {
     emit('delete', editedTask.value.id)
   }
 }

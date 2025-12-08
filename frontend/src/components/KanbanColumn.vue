@@ -21,7 +21,7 @@
           <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
           <span
             class="px-2 py-1 text-xs font-medium rounded"
-            :class="getPriorityClass(task.priority)"
+            :class="getPriorityClass(task.priority || 'medium')"
           >
             {{ task.priority }}
           </span>
@@ -30,11 +30,11 @@
         <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ task.description }}</p>
         
         <div class="flex items-center justify-between text-xs text-gray-500">
-          <div v-if="task.assignedTo" class="flex items-center gap-2">
+          <div v-if="task.assigned_to" class="flex items-center gap-2">
             <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-              {{ task.assignedTo.charAt(0) }}
+              {{ task.assigned_to.charAt(0) }}
             </div>
-            <span>{{ task.assignedTo }}</span>
+            <span>{{ task.assigned_to }}</span>
           </div>
           <span v-else class="text-gray-400">Unassigned</span>
         </div>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Task } from '@/views/ProjectDetailView.vue'
+import type { Task } from '@/services/api'
 
 defineProps<{
   title: string
