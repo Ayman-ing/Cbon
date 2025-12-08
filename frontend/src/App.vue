@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -19,7 +28,7 @@ import { RouterLink, RouterView } from 'vue-router'
           </div>
           
           <!-- Navigation -->
-          <nav class="flex gap-2 sm:gap-4">
+          <nav class="flex items-center gap-2 sm:gap-4">
             <RouterLink 
               to="/" 
               class="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-md text-sm font-medium transition"
@@ -28,19 +37,44 @@ import { RouterLink, RouterView } from 'vue-router'
               Home
             </RouterLink>
             <RouterLink 
+              v-if="authStore.isAuthenticated"
               to="/projects" 
               class="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-md text-sm font-medium transition"
               active-class="text-blue-600 bg-blue-50"
             >
               Projects
             </RouterLink>
-            <RouterLink 
-              to="/about" 
-              class="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-md text-sm font-medium transition"
-              active-class="text-blue-600 bg-blue-50"
-            >
-              About
-            </RouterLink>
+
+            <!-- Auth Section -->
+            <div v-if="authStore.isAuthenticated" class="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
+              <div class="hidden sm:flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                  {{ authStore.user?.full_name?.charAt(0).toUpperCase() }}
+                </div>
+                <span class="text-sm text-gray-700">{{ authStore.user?.full_name }}</span>
+              </div>
+              <button
+                @click="handleLogout"
+                class="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-md text-sm font-medium transition"
+              >
+                Logout
+              </button>
+            </div>
+
+            <div v-else class="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+              <RouterLink 
+                to="/login" 
+                class="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-md text-sm font-medium transition"
+              >
+                Login
+              </RouterLink>
+              <RouterLink 
+                to="/register" 
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+              >
+                Sign up
+              </RouterLink>
+            </div>
           </nav>
         </div>
       </div>
@@ -72,14 +106,9 @@ import { RouterLink, RouterView } from 'vue-router'
                   Home
                 </router-link>
               </li>
-              <li>
+              <li v-if="authStore.isAuthenticated">
                 <router-link to="/projects" class="text-sm text-gray-400 hover:text-white transition">
                   Projects
-                </router-link>
-              </li>
-              <li>
-                <router-link to="/about" class="text-sm text-gray-400 hover:text-white transition">
-                  About
                 </router-link>
               </li>
             </ul>

@@ -5,22 +5,46 @@
       <div class="max-w-7xl mx-auto">
         <div class="flex flex-col items-center justify-center text-center space-y-8">
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900">
-            Welcome to <span class="text-blue-600">Cbon</span>
+            <span v-if="authStore.isAuthenticated">Welcome back, <span class="text-blue-600">{{ authStore.user?.full_name }}</span></span>
+            <span v-else>Welcome to <span class="text-blue-600">Cbon</span></span>
           </h1>
           <p class="text-lg sm:text-xl text-gray-600 max-w-2xl">
-            Your powerful project management solution. Organize, track, and deliver projects with ease.
+            <span v-if="authStore.isAuthenticated">
+              Manage your projects and tasks efficiently with our powerful tools.
+            </span>
+            <span v-else>
+              Your powerful project management solution. Organize, track, and deliver projects with ease.
+            </span>
           </p>
           
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
             <router-link
+              v-if="authStore.isAuthenticated"
               to="/projects"
               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition"
             >
-              Get Started
+              Go to Projects
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </router-link>
+            <template v-else>
+              <router-link
+                to="/register"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition"
+              >
+                Get Started
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </router-link>
+              <router-link
+                to="/login"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium border border-gray-200 transition"
+              >
+                Sign In
+              </router-link>
+            </template>
             <button
               @click="scrollToFeatures"
               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium border border-gray-200 transition"
@@ -90,7 +114,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { projectApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const featuresRef = ref<HTMLElement | null>(null)
 
 const stats = ref({
@@ -137,6 +163,11 @@ const scrollToFeatures = () => {
 }
 
 const loadStats = async () => {
+  // Only load stats if user is authenticated
+  if (!authStore.isAuthenticated) {
+    return
+  }
+  
   try {
     const response = await projectApi.getAll({ skip: 0, limit: 1000 })
     const projects = response.data

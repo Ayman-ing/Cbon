@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
 from app.core.database import get_db
+from app.core.security import get_password_hash, get_current_user
 from app.user.model import User
 from app.user.schema import UserCreate, UserUpdate, UserResponse
 
@@ -12,9 +13,8 @@ router = APIRouter(prefix="/users", tags=["Users"])
 # Database operations
 def create_user_in_db(db: Session, user_data: UserCreate) -> User:
     """Create a new user in the database"""
-    # TODO: Hash the password before storing
     user_dict = user_data.model_dump()
-    user_dict['password_hash'] = user_dict.pop('password')  # For now, will need proper hashing
+    user_dict['password_hash'] = get_password_hash(user_dict.pop('password'))
     db_user = User(**user_dict)
     db.add(db_user)
     db.commit()
@@ -45,8 +45,7 @@ def update_user_in_db(db: Session, user_id: UUID, user_data: UserUpdate) -> User
     
     update_data = user_data.model_dump(exclude_unset=True)
     if 'password' in update_data:
-        # TODO: Hash the password before storing
-        update_data['password_hash'] = update_data.pop('password')
+        update_data['password_hash'] = get_password_hash(update_data.pop('password'))
     
     for field, value in update_data.items():
         setattr(db_user, field, value)
