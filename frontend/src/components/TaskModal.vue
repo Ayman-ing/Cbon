@@ -85,10 +85,15 @@
               </div>
 
               <!-- Assigned To Field -->
-              <UserSelect
-                v-model="assignedUsers"
-                label="Assign To"
-              />
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Assign To
+                </label>
+                <UserSelect
+                  v-model="assignedUsers"
+                  label="Select users to assign"
+                />
+              </div>
             </div>
 
             <!-- Modal Footer -->
@@ -117,6 +122,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Task } from '@/services/api'
+import UserSelect from './UserSelect.vue'
 
 defineProps<{
   show: boolean
@@ -131,16 +137,25 @@ const formData = ref({
   title: '',
   description: '',
   priority: 'medium' as 'low' | 'medium' | 'high',
-  assigned_to: ''
 })
 
+const assignedUsers = ref<string[]>([])
+
 const handleSubmit = () => {
-  emit('save', { ...formData.value })
+  // Take the first assigned user (since backend only supports one user currently)
+  const assigned_to = assignedUsers.value.length > 0 ? assignedUsers.value[0] : undefined
+  
+  emit('save', { 
+    ...formData.value,
+    assigned_to
+  })
+  
+  // Reset form
   formData.value = {
     title: '',
     description: '',
     priority: 'medium',
-    assigned_to: ''
   }
+  assignedUsers.value = []
 }
 </script>

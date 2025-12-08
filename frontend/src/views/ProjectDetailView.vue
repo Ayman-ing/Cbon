@@ -141,13 +141,20 @@ const openTaskDetail = (task: Task) => {
 
 const handleAddTask = async (taskData: Partial<Task>) => {
   try {
-    const newTask = {
-      ...taskData,
+    const newTask: any = {
+      title: taskData.title,
+      description: taskData.description,
       project_id: projectId,
-      status: 'not_started' as const,
+      status: 'not_started',
       priority: taskData.priority || 'medium',
     }
-    await taskApi.create(newTask as Omit<Task, 'id' | 'created_at' | 'updated_at'>)
+    
+    // Only include assigned_to if it's a valid value (not empty string or undefined)
+    if (taskData.assigned_to && taskData.assigned_to !== '') {
+      newTask.assigned_to = taskData.assigned_to
+    }
+    
+    await taskApi.create(newTask)
     await loadTasks() // Reload tasks
     showAddTaskModal.value = false
   } catch (err) {
